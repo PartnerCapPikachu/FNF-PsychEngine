@@ -570,7 +570,9 @@ class CustomInterp extends crowplexus.hscript.Interp
 						warn(ECustom('$variable cannot be reassigned as it is a constant expression.'));
 				}
 				else if (parentInstance != null && _instanceFields.contains(variable))
+				{
 					Reflect.setProperty(parentInstance, variable, value);
+				}
 				else
 				{
 					if (!variables.exists(variable))
@@ -617,7 +619,9 @@ class CustomInterp extends crowplexus.hscript.Interp
 						warn(ECustom('$variable cannot be reassigned as it is a constant expression.'));
 				}
 				else if (parentInstance != null && _instanceFields.contains(variable))
+				{
 					Reflect.setProperty(parentInstance, variable, value);
+				}
 				else
 				{
 					if (!variables.exists(variable))
