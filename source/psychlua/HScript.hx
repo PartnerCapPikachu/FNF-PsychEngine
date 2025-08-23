@@ -541,13 +541,13 @@ class CustomInterp extends crowplexus.hscript.Interp
 	override function resolve(variable:String):Dynamic
 	{
 		if (locals.exists(variable))
-			return locals.get(variable).r;
+			return locals[variable].r;
 
 		if (variables.exists(variable))
-			return variables.get(variable);
+			return variables[variable];
 
 		if (imports.exists(variable))
-			return imports.get(variable);
+			return imports[variable];
 
 		if (parentInstance != null && _instanceFields.contains(variable))
 			return Reflect.getProperty(parentInstance, variable);
@@ -555,102 +555,12 @@ class CustomInterp extends crowplexus.hscript.Interp
 		return error(EUnknownVariable(variable));
 	}
 
-	override function assign(e1:Expr, e2:Expr):Dynamic
+	override function setVar(name:String, value:Dynamic):Void
 	{
-		var value:Dynamic = expr(e2);
-		switch (Tools.expr(e1))
-		{
-			case EIdent(variable):
-				var local:Dynamic = locals.get(variable);
-				if (local != null)
-				{
-					if (!local.const)
-						local.r = value;
-					else
-						warn(ECustom('$variable cannot be reassigned as it is a constant expression.'));
-				}
-				else if (parentInstance != null && _instanceFields.contains(variable))
-				{
-					Reflect.setProperty(parentInstance, variable, value);
-				}
-				else
-				{
-					if (!variables.exists(variable))
-						error(EUnknownVariable(variable));
-
-					setVar(variable, value);
-				}
-
-			case EField(variable, field, stinky):
-				var variable:Dynamic = expr(variable);
-				if (variable == null)
-				{
-					if (stinky)
-						error(EInvalidAccess(field));
-					else
-						return null;
-				}
-
-				value = set(variable, field, value);
-
-			case EArray(variable, index):
-				expr(variable)[expr(index)] = value;
-
-			default:
-				error(EInvalidOp('='));
-		}
-		return value;
-	}
-
-	override function evalAssignOp(op:String, func:Dynamic->Dynamic->Dynamic, e1:Expr, e2:Expr):Dynamic
-	{
-		var value:Dynamic;
-		var _value:Dynamic = expr(e2);
-		switch (Tools.expr(e1))
-		{
-			case EIdent(variable):
-				value = func(expr(e1), _value);
-				var local:Dynamic = locals.get(variable);
-				if (local != null)
-				{
-					if (!local.const)
-						local.r = value;
-					else
-						warn(ECustom('$variable cannot be reassigned as it is a constant expression.'));
-				}
-				else if (parentInstance != null && _instanceFields.contains(variable))
-				{
-					Reflect.setProperty(parentInstance, variable, value);
-				}
-				else
-				{
-					if (!variables.exists(variable))
-						error(EUnknownVariable(variable));
-
-					setVar(variable, value);
-				}
-
-			case EField(variable, field, stinky):
-				var variable:Dynamic = expr(variable);
-				if (variable == null)
-				{
-					if (stinky)
-						error(EInvalidAccess(field));
-					else
-						return null;
-				}
-
-				value = set(variable, field, func(get(variable, field), _value));
-
-			case EArray(variable, index):
-				var array:Dynamic = expr(variable);
-				var index:Dynamic = expr(index);
-				value = array[index] = func(array[index], _value);
-
-			default:
-				return error(EInvalidOp(op));
-		}
-		return value;
+		if (parentInstance != null && _instanceFields.contains(name))
+			Reflect.setProperty(parentInstance, name, value);
+		else
+			variables[name] = value;
 	}
 }
 #else
