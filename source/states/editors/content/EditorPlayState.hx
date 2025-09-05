@@ -321,19 +321,17 @@ class EditorPlayState extends MusicBeatSubstate
 
 		// Section Time/Crochet
 		var noteSec:Int = 0;
+		var daBpm:Float = PlayState.SONG.notes[noteSec].changeBPM == true ? PlayState.SONG.notes[noteSec].bpm : PlayState.SONG.bpm;
+		var oldNote:Note = null;
 		var secTime:Float = 0;
 		var cachedSectionTimes:Array<Float> = [];
-		var cachedSectionCrochets:Array<Float> = [];
-		if(PlayState.SONG != null)
+		if (PlayState.SONG != null)
 		{
 			var tempBpm:Float = daBpm;
 			for (secNum => section in PlayState.SONG.notes)
 			{
-				if(PlayState.SONG.notes[noteSec].changeBPM == true)
-					tempBpm = PlayState.SONG.notes[noteSec].bpm;
-
-				secTime += Conductor.calculateCrochet(tempBpm) * (Math.round(4 * section.sectionBeats) / 4);
-				cachedSectionTimes.push(secTime);
+				if (section.changeBPM) tempBpm = section.bpm;
+				cachedSectionTimes.push(secTime += Conductor.calculateCrochet(tempBpm) * section.sectionBeats);
 			}
 		}
 
@@ -341,13 +339,6 @@ class EditorPlayState extends MusicBeatSubstate
 		for (note in _noteList)
 		{
 			if(note == null || note.strumTime < startPos) continue;
-			
-			while(cachedSectionTimes.length > noteSec + 1 && cachedSectionTimes[noteSec + 1] <= note.strumTime)
-			{
-				noteSec++;
-				if(PlayState.SONG.notes[noteSec].changeBPM == true)
-					daBpm = PlayState.SONG.notes[noteSec].bpm;
-			}
 
 			var idx: Int = _noteList.indexOf(note);
 			if (idx != 0) {
@@ -373,19 +364,25 @@ class EditorPlayState extends MusicBeatSubstate
 			swagNote.sustainLength = note.sustainLength;
 			swagNote.gfNote = note.gfNote;
 			swagNote.noteType = note.noteType;
-
 			swagNote.scrollFactor.set();
 			unspawnNotes.push(swagNote);
 
-			var curStepCrochet:Float = 60 / daBpm * 1000 / 4.0;
-			final roundSus:Int = Math.round(swagNote.sustainLength / Conductor.stepCrochet);
+			while (cachedSectionTimes[noteSec] <= swagNote.strumTime)
+			{
+				noteSec++;
+				if (PlayState.SONG.notes[noteSec].changeBPM == true)
+					daBpm = PlayState.SONG.notes[noteSec].bpm;
+			}
+
+			var curStepCrochet:Float = 15000 / daBpm;
+			final roundSus:Int = Math.round(swagNote.sustainLength / curStepCrochet);
 			if(roundSus > 0)
 			{
 				for (susNote in 0...roundSus)
 				{
 					oldNote = unspawnNotes[Std.int(unspawnNotes.length - 1)];
 
-					var sustainNote:Note = new Note(swagNote.strumTime + (curStepCrochet * susNote), note.noteData, oldNote, true, this);
+					var sustainNote:Note = new Note(swagNote.strumTime + curStepCrochet * susNote, note.noteData, oldNote, true, this);
 					sustainNote.mustPress = swagNote.mustPress;
 					sustainNote.gfNote = swagNote.gfNote;
 					sustainNote.noteType = swagNote.noteType;
